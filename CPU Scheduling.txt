@@ -1,0 +1,324 @@
+==================FCFS=========================
+/*
+ * First Come First Serve (FCFS) CPU Scheduling Algorithm
+ * Non-preemptive | Processes sorted by arrival time
+ *
+ * Metrics:
+ *   Finish Time (FT)       = when process completes
+ *   Turn Around Time (TAT) = FT - Arrival Time
+ *   Waiting Time (WT)      = TAT - Burst Time
+ */
+
+#include <stdio.h>
+
+#define MAX 20
+
+int main() {
+    int n;
+    int pid[MAX], at[MAX], bt[MAX];
+    int ft[MAX], tat[MAX], wt[MAX];
+    float avg_wt = 0, avg_tat = 0;
+    int i, j, temp_idx;
+
+    printf("==========================================\n");
+    printf("  First Come First Serve (FCFS) Scheduling\n");
+    printf("==========================================\n\n");
+
+    printf("Enter number of processes (max %d): ", MAX);
+    scanf("%d", &n);
+
+    /* Input arrival and burst times */
+    printf("\nEnter process details:\n");
+    for (i = 0; i < n; i++) {
+        pid[i] = i + 1;
+        printf("  P%d -> Arrival Time: ", i + 1);
+        scanf("%d", &at[i]);
+        printf("  P%d -> Burst Time  : ", i + 1);
+        scanf("%d", &bt[i]);
+    }
+
+    /* Sort processes by arrival time (selection sort) */
+    for (i = 0; i < n - 1; i++) {
+        temp_idx = i;
+        for (j = i + 1; j < n; j++) {
+            if (at[j] < at[temp_idx])
+                temp_idx = j;
+        }
+        /* Swap arrival time */
+        int tmp = at[i]; at[i] = at[temp_idx]; at[temp_idx] = tmp;
+        /* Swap burst time */
+        tmp = bt[i]; bt[i] = bt[temp_idx]; bt[temp_idx] = tmp;
+        /* Swap pid */
+        tmp = pid[i]; pid[i] = pid[temp_idx]; pid[temp_idx] = tmp;
+    }
+
+    /* Calculate Finish, TAT, and Waiting Times */
+    int current_time = 0;
+    for (i = 0; i < n; i++) {
+        /* CPU waits if it finishes before next process arrives */
+        if (current_time < at[i])
+            current_time = at[i];
+
+        ft[i]  = current_time + bt[i];
+        tat[i] = ft[i] - at[i];
+        wt[i]  = tat[i] - bt[i];
+
+        avg_wt  += wt[i];
+        avg_tat += tat[i];
+
+        current_time = ft[i];
+    }
+
+    avg_wt  /= n;
+    avg_tat /= n;
+
+    /* Print Results */
+    printf("\n%-8s %-14s %-12s %-13s %-16s %-13s\n",
+           "Process", "Arrival Time", "Burst Time", "Finish Time",
+           "Turnaround Time", "Waiting Time");
+    printf("----------------------------------------------------------------------\n");
+    for (i = 0; i < n; i++) {
+        printf("  P%-6d %-14d %-12d %-13d %-16d %-13d\n",
+               pid[i], at[i], bt[i], ft[i], tat[i], wt[i]);
+    }
+    printf("----------------------------------------------------------------------\n");
+    printf("\nAverage Waiting Time    : %.2f\n", avg_wt);
+    printf("Average Turnaround Time : %.2f\n", avg_tat);
+
+    return 0;
+}
+
+
+
+==========Spn=============================
+/*
+ * Shortest Process Next (SPN) / Shortest Job First (SJF)
+ * Non-preemptive | Among all arrived processes, shortest burst runs first
+ *
+ * Metrics:
+ *   Finish Time (FT)       = when process completes
+ *   Turn Around Time (TAT) = FT - Arrival Time
+ *   Waiting Time (WT)      = TAT - Burst Time
+ */
+
+#include <stdio.h>
+
+#define MAX 20
+
+int main() {
+    int n;
+    int pid[MAX], at[MAX], bt[MAX], bt_orig[MAX];
+    int ft[MAX], tat[MAX], wt[MAX];
+    int completed[MAX];   /* 0 = not done, 1 = done */
+    float avg_wt = 0, avg_tat = 0;
+    int i, done = 0;
+
+    printf("============================================\n");
+    printf("  Shortest Process Next (SPN / SJF) Scheduling\n");
+    printf("============================================\n\n");
+
+    printf("Enter number of processes (max %d): ", MAX);
+    scanf("%d", &n);
+
+    printf("\nEnter process details:\n");
+    for (i = 0; i < n; i++) {
+        pid[i] = i + 1;
+        printf("  P%d -> Arrival Time: ", i + 1);
+        scanf("%d", &at[i]);
+        printf("  P%d -> Burst Time  : ", i + 1);
+        scanf("%d", &bt[i]);
+        bt_orig[i]    = bt[i];
+        completed[i]  = 0;
+    }
+
+    int current_time = 0;
+
+    while (done < n) {
+        /* Find the process with the shortest burst among arrived processes */
+        int shortest = -1;
+        for (i = 0; i < n; i++) {
+            if (!completed[i] && at[i] <= current_time) {
+                if (shortest == -1 || bt[i] < bt[shortest])
+                    shortest = i;
+            }
+        }
+
+        if (shortest == -1) {
+            /* No process has arrived yet — advance time */
+            current_time++;
+            continue;
+        }
+
+        /* Execute selected process to completion */
+        current_time      += bt[shortest];
+        ft[shortest]       = current_time;
+        tat[shortest]      = ft[shortest] - at[shortest];
+        wt[shortest]       = tat[shortest] - bt_orig[shortest];
+        completed[shortest] = 1;
+        done++;
+
+        avg_wt  += wt[shortest];
+        avg_tat += tat[shortest];
+    }
+
+    avg_wt  /= n;
+    avg_tat /= n;
+
+    /* Print Results */
+    printf("\n%-8s %-14s %-12s %-13s %-16s %-13s\n",
+           "Process", "Arrival Time", "Burst Time", "Finish Time",
+           "Turnaround Time", "Waiting Time");
+    printf("----------------------------------------------------------------------\n");
+    for (i = 0; i < n; i++) {
+        printf("  P%-6d %-14d %-12d %-13d %-16d %-13d\n",
+               pid[i], at[i], bt_orig[i], ft[i], tat[i], wt[i]);
+    }
+    printf("----------------------------------------------------------------------\n");
+    printf("\nAverage Waiting Time    : %.2f\n", avg_wt);
+    printf("Average Turnaround Time : %.2f\n", avg_tat);
+
+    return 0;
+}
+======================Round robin=======================
+/*
+ * Round Robin (RR) CPU Scheduling Algorithm
+ * Preemptive | Each process gets a fixed time quantum in cyclic order
+ *
+ * Metrics:
+ *   Finish Time (FT)       = when process completes
+ *   Turn Around Time (TAT) = FT - Arrival Time
+ *   Waiting Time (WT)      = TAT - Burst Time
+ */
+
+#include <stdio.h>
+
+#define MAX 20
+
+int main() {
+    int n, quantum;
+    int pid[MAX], at[MAX], bt[MAX], bt_rem[MAX];
+    int ft[MAX], tat[MAX], wt[MAX];
+    int queue[MAX * 100]; /* circular-like execution queue */
+    int in_queue[MAX];    /* tracks if process is in the queue */
+    float avg_wt = 0, avg_tat = 0;
+    int i, done = 0;
+
+    printf("==========================================\n");
+    printf("       Round Robin (RR) Scheduling\n");
+    printf("==========================================\n\n");
+
+    printf("Enter number of processes (max %d): ", MAX);
+    scanf("%d", &n);
+
+    printf("Enter Time Quantum: ");
+    scanf("%d", &quantum);
+
+    printf("\nEnter process details:\n");
+    for (i = 0; i < n; i++) {
+        pid[i]     = i + 1;
+        printf("  P%d -> Arrival Time: ", i + 1);
+        scanf("%d", &at[i]);
+        printf("  P%d -> Burst Time  : ", i + 1);
+        scanf("%d", &bt[i]);
+        bt_rem[i]  = bt[i];
+        in_queue[i] = 0;
+    }
+
+    int current_time = 0;
+    int q_front = 0, q_rear = 0;
+
+    /* Enqueue processes that arrive at time 0 */
+    for (i = 0; i < n; i++) {
+        if (at[i] == 0) {
+            queue[q_rear++] = i;
+            in_queue[i] = 1;
+        }
+    }
+
+    /* If nothing arrived at t=0, jump to earliest arrival */
+    if (q_front == q_rear) {
+        int earliest = 0;
+        for (i = 1; i < n; i++)
+            if (at[i] < at[earliest]) earliest = i;
+        current_time = at[earliest];
+        queue[q_rear++] = earliest;
+        in_queue[earliest] = 1;
+    }
+
+    printf("\n--- Execution Timeline ---\n");
+
+    while (q_front < q_rear) {
+        int idx = queue[q_front++]; /* dequeue */
+
+        /* Check for any newly arrived processes before or during this slice */
+        for (i = 0; i < n; i++) {
+            if (!in_queue[i] && bt_rem[i] > 0 && at[i] <= current_time) {
+                queue[q_rear++] = i;
+                in_queue[i] = 1;
+            }
+        }
+
+        int exec_time = (bt_rem[idx] < quantum) ? bt_rem[idx] : quantum;
+
+        printf("  Time %3d -> %3d : P%d runs\n",
+               current_time, current_time + exec_time, pid[idx]);
+
+        current_time += exec_time;
+        bt_rem[idx]  -= exec_time;
+
+        /* Enqueue any processes that arrived during this slice */
+        for (i = 0; i < n; i++) {
+            if (!in_queue[i] && bt_rem[i] > 0 &&
+                at[i] > current_time - exec_time && at[i] <= current_time) {
+                queue[q_rear++] = i;
+                in_queue[i] = 1;
+            }
+        }
+
+        if (bt_rem[idx] > 0) {
+            /* Process not finished — re-enqueue */
+            queue[q_rear++] = idx;
+        } else {
+            /* Process finished */
+            ft[idx]  = current_time;
+            tat[idx] = ft[idx] - at[idx];
+            wt[idx]  = tat[idx] - bt[idx];
+            done++;
+        }
+
+        /* If queue is empty but processes remain, jump to next arrival */
+        if (q_front == q_rear && done < n) {
+            for (i = 0; i < n; i++) {
+                if (!in_queue[i] && bt_rem[i] > 0) {
+                    current_time = at[i];
+                    queue[q_rear++] = i;
+                    in_queue[i] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    /* Compute averages */
+    for (i = 0; i < n; i++) {
+        avg_wt  += wt[i];
+        avg_tat += tat[i];
+    }
+    avg_wt  /= n;
+    avg_tat /= n;
+
+    /* Print Results */
+    printf("\n%-8s %-14s %-12s %-13s %-16s %-13s\n",
+           "Process", "Arrival Time", "Burst Time", "Finish Time",
+           "Turnaround Time", "Waiting Time");
+    printf("----------------------------------------------------------------------\n");
+    for (i = 0; i < n; i++) {
+        printf("  P%-6d %-14d %-12d %-13d %-16d %-13d\n",
+               pid[i], at[i], bt[i], ft[i], tat[i], wt[i]);
+    }
+    printf("----------------------------------------------------------------------\n");
+    printf("\nAverage Waiting Time    : %.2f\n", avg_wt);
+    printf("Average Turnaround Time : %.2f\n", avg_tat);
+
+    return 0;
+}
