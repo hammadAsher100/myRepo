@@ -700,83 +700,55 @@ ANSWER:
 DIR="submissions"
 REPORT="report.txt"
 
-echo "===== File Analysis Report =====" > $REPORT
-echo "Directory: $DIR" >> $REPORT
-echo "" >> $REPORT
+echo "File Analysis Report" > $REPORT
 
-# Check directory
+# check directory
 if [ ! -d "$DIR" ]; then
-    echo "Directory not found!"
+    echo "Folder not found"
     exit 1
 fi
 
-# Counters
-txt_count=0
-c_count=0
-data_count=0
+txt=0
+c=0
+csv=0
 
-echo "Listing all files:" >> $REPORT
-ls "$DIR" >> $REPORT
+# list files
+echo "Files:" >> $REPORT
+ls $DIR >> $REPORT
 echo "" >> $REPORT
 
-# -------- TEXT FILES LOOP --------
-echo "---- Text Files ----" >> $REPORT
-for file in "$DIR"/*.txt
+# text files
+for f in $DIR/*.txt
 do
-    if [ -f "$file" ]; then
-        ((txt_count++))
-        lines=$(wc -l < "$file")
-        echo "$file | Lines: $lines" >> $REPORT
-    fi
+    [ -f "$f" ] || continue
+    txt=$((txt+1))
+    echo "$f lines: $(wc -l < $f)" >> $REPORT
 done
-echo "" >> $REPORT
 
-# -------- C FILES LOOP --------
-echo "---- C Files ----" >> $REPORT
-for file in "$DIR"/*.c
+# c files
+for f in $DIR/*.c
 do
-    if [ -f "$file" ]; then
-        ((c_count++))
-        lines=$(wc -l < "$file")
-        echo "$file | Lines: $lines" >> $REPORT
-    fi
+    [ -f "$f" ] || continue
+    c=$((c+1))
+    echo "$f lines: $(wc -l < $f)" >> $REPORT
 done
-echo "" >> $REPORT
 
-# -------- DATA FILES LOOP --------
-echo "---- CSV Files ----" >> $REPORT
-for file in "$DIR"/*.csv
+# csv files
+for f in $DIR/*.csv
 do
-    if [ -f "$file" ]; then
-        ((data_count++))
-        rows=$(wc -l < "$file")
-        echo "$file | Rows: $rows" >> $REPORT
-    fi
+    [ -f "$f" ] || continue
+    csv=$((csv+1))
+    echo "$f rows: $(wc -l < $f)" >> $REPORT
 done
+
+# summary
 echo "" >> $REPORT
+echo "Summary:" >> $REPORT
+echo "txt: $txt" >> $REPORT
+echo "c: $c" >> $REPORT
+echo "csv: $csv" >> $REPORT
 
-# -------- UNKNOWN FILES LOOP --------
-echo "---- Other Files ----" >> $REPORT
-for file in "$DIR"/*
-do
-    if [ -f "$file" ]; then
-        case "$file" in
-            *.txt|*.c|*.csv) ;;  # skip known types
-            *)
-                echo "$file | Unknown Type" >> $REPORT
-                ;;
-        esac
-    fi
-done
-echo "" >> $REPORT
-
-# Summary
-echo "===== Summary =====" >> $REPORT
-echo "Text Files: $txt_count" >> $REPORT
-echo "C Files: $c_count" >> $REPORT
-echo "CSV Files: $data_count" >> $REPORT
-
-echo "Report generated successfully: $REPORT"
+echo "Done. Check report.txt"
 
 =================Commands=============================
 ════════════════════════════════════════════════════════

@@ -1381,171 +1381,60 @@ The script should generate a simple report file that shows all the analysis perf
 
 
 ANSWER:
-
-\#!/bin/bash
-
-
+#!/bin/bash
 
 DIR="submissions"
-
 REPORT="report.txt"
 
+echo "File Analysis Report" > $REPORT
 
-
-echo "===== File Analysis Report =====" > $REPORT
-
-echo "Directory: $DIR" >> $REPORT
-
-echo "" >> $REPORT
-
-
-
-\# Check directory
-
-if \[ ! -d "$DIR" ]; then
-
-&#x20;   echo "Directory not found!"
-
-&#x20;   exit 1
-
+# check directory
+if [ ! -d "$DIR" ]; then
+    echo "Folder not found"
+    exit 1
 fi
 
+txt=0
+c=0
+csv=0
 
-
-\# Counters
-
-txt\_count=0
-
-c\_count=0
-
-data\_count=0
-
-
-
-echo "Listing all files:" >> $REPORT
-
-ls "$DIR" >> $REPORT
-
+# list files
+echo "Files:" >> $REPORT
+ls $DIR >> $REPORT
 echo "" >> $REPORT
 
-
-
-\# -------- TEXT FILES LOOP --------
-
-echo "---- Text Files ----" >> $REPORT
-
-for file in "$DIR"/\*.txt
-
+# text files
+for f in $DIR/*.txt
 do
-
-&#x20;   if \[ -f "$file" ]; then
-
-&#x20;       ((txt\_count++))
-
-&#x20;       lines=$(wc -l < "$file")
-
-&#x20;       echo "$file | Lines: $lines" >> $REPORT
-
-&#x20;   fi
-
+    [ -f "$f" ] || continue
+    txt=$((txt+1))
+    echo "$f lines: $(wc -l < $f)" >> $REPORT
 done
 
-echo "" >> $REPORT
-
-
-
-\# -------- C FILES LOOP --------
-
-echo "---- C Files ----" >> $REPORT
-
-for file in "$DIR"/\*.c
-
+# c files
+for f in $DIR/*.c
 do
-
-&#x20;   if \[ -f "$file" ]; then
-
-&#x20;       ((c\_count++))
-
-&#x20;       lines=$(wc -l < "$file")
-
-&#x20;       echo "$file | Lines: $lines" >> $REPORT
-
-&#x20;   fi
-
+    [ -f "$f" ] || continue
+    c=$((c+1))
+    echo "$f lines: $(wc -l < $f)" >> $REPORT
 done
 
-echo "" >> $REPORT
-
-
-
-\# -------- DATA FILES LOOP --------
-
-echo "---- CSV Files ----" >> $REPORT
-
-for file in "$DIR"/\*.csv
-
+# csv files
+for f in $DIR/*.csv
 do
-
-&#x20;   if \[ -f "$file" ]; then
-
-&#x20;       ((data\_count++))
-
-&#x20;       rows=$(wc -l < "$file")
-
-&#x20;       echo "$file | Rows: $rows" >> $REPORT
-
-&#x20;   fi
-
+    [ -f "$f" ] || continue
+    csv=$((csv+1))
+    echo "$f rows: $(wc -l < $f)" >> $REPORT
 done
 
+# summary
 echo "" >> $REPORT
+echo "Summary:" >> $REPORT
+echo "txt: $txt" >> $REPORT
+echo "c: $c" >> $REPORT
+echo "csv: $csv" >> $REPORT
 
-
-
-\# -------- UNKNOWN FILES LOOP --------
-
-echo "---- Other Files ----" >> $REPORT
-
-for file in "$DIR"/\*
-
-do
-
-&#x20;   if \[ -f "$file" ]; then
-
-&#x20;       case "$file" in
-
-&#x20;           \*.txt|\*.c|\*.csv) ;;  # skip known types
-
-&#x20;           \*)
-
-&#x20;               echo "$file | Unknown Type" >> $REPORT
-
-&#x20;               ;;
-
-&#x20;       esac
-
-&#x20;   fi
-
-done
-
-echo "" >> $REPORT
-
-
-
-\# Summary
-
-echo "===== Summary =====" >> $REPORT
-
-echo "Text Files: $txt\_count" >> $REPORT
-
-echo "C Files: $c\_count" >> $REPORT
-
-echo "CSV Files: $data\_count" >> $REPORT
-
-
-
-echo "Report generated successfully: $REPORT"
-
+echo "Done. Check report.txt"
 
 
 =================Commands=============================
@@ -2440,11 +2329,3 @@ echo "============================================"  >> "$REPORT"
 echo "Report saved to: $REPORT"
 cat "$REPORT"
 ======================================================================================================================
-
-
-
-
-
-
-
-
