@@ -1,0 +1,1329 @@
+Question 1:
+Open-ended scenario: University lab submission tracker
+Scenario
+You are a lab assistant at a university. Every week students drop their assignment files into a shared submissions/ directory. The files are a mix of text reports, data files and shell scripts. The department head wants a single shell script that explores what is in that directory, organises the files into sub-folders by extension, and produces a word-count and line-count breakdown of every text file — all saved into one report.
+Sample directory contents
+ali_report.txt   sara_data.csv   usman_notes.txt
+fatima_prog.sh   hassan_data.csv   zara_report.txt
+Tasks
+Use pwd and ls -lh to display the current directory and list all files with their sizes. Redirect the output to the report file.
+Use mkdir, and a for loop with if / elif to sort every file into text_files/, data_files/, or script_files/ based on its extension. Log each move into the report using >>.
+Use wc -l and wc -w on every .txt file and append a formatted summary table to the report. Also use grep to find any file containing the word report and append those results.
+End the script by displaying the total file count per sub-folder using ls piped into wc -l, and append a final summary to the report.
+
+Answer 1:
+#!/bin/bash
+# ============================================================
+#  Script   : submission_tracker.sh
+#  Scenario : University Lab Submission Tracker
+# ============================================================
+
+REPORT="tracker_report.txt"
+
+echo ""                                                > "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "     UNIVERSITY SUBMISSION TRACKER REPORT  " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Date    : $(date)"                            >> "$REPORT"
+echo "User    : $(whoami)"                          >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 1: Explore the directory
+# ------------------------------------------------------------
+echo "---- Task 1: Directory Exploration ----"     >> "$REPORT"
+echo "Current directory: $(pwd)"                   >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+mkdir -p submissions
+touch submissions/ali_report.txt
+touch submissions/sara_data.csv
+touch submissions/usman_notes.txt
+touch submissions/fatima_prog.sh
+touch submissions/hassan_data.csv
+touch submissions/zara_report.txt
+
+echo "ali notes for the lab report assignment." > submissions/ali_report.txt
+echo "sara,data,values,collected,from,survey."  > submissions/sara_data.csv
+echo "usman notes on operating system concepts." > submissions/usman_notes.txt
+echo "zara report on memory management topic."  > submissions/zara_report.txt
+
+echo "All files in submissions/:"                >> "$REPORT"
+ls -lh submissions/                             >> "$REPORT"
+echo ""                                          >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 2: Sort files into sub-folders by extension
+# ------------------------------------------------------------
+echo "---- Task 2: Sorting Files by Extension ----" >> "$REPORT"
+
+mkdir -p submissions/text_files
+mkdir -p submissions/data_files
+mkdir -p submissions/script_files
+
+for file in submissions/*; do
+    if [ -f "$file" ]; then
+        fname=$(basename "$file")
+        ext="${fname##*.}"
+
+        if [ "$ext" = "txt" ]; then
+            cp "$file" submissions/text_files/
+            echo "Sorted to text_files   : $fname"   >> "$REPORT"
+        elif [ "$ext" = "csv" ]; then
+            cp "$file" submissions/data_files/
+            echo "Sorted to data_files   : $fname"   >> "$REPORT"
+        elif [ "$ext" = "sh" ]; then
+            cp "$file" submissions/script_files/
+            echo "Sorted to script_files : $fname"   >> "$REPORT"
+        fi
+    fi
+done
+echo ""                                              >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 3: wc on .txt files + grep for keyword
+# ------------------------------------------------------------
+echo "---- Task 3: Word and Line Count of Text Files ----" >> "$REPORT"
+printf "%-28s %8s %8s\n" "File" "Lines" "Words"           >> "$REPORT"
+echo "--------------------------------------------"        >> "$REPORT"
+
+for file in submissions/*.txt; do
+    if [ -f "$file" ]; then
+        fname=$(basename "$file")
+        lines=$(wc -l < "$file")
+        words=$(wc -w < "$file")
+        printf "%-28s %8s %8s\n" "$fname" "$lines" "$words" >> "$REPORT"
+    fi
+done
+echo ""                                                     >> "$REPORT"
+
+echo "Files containing the word 'report' (grep):"          >> "$REPORT"
+grep -rl "report" submissions/*.txt                        >> "$REPORT"
+echo ""                                                     >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 4: Count per sub-folder + final summary
+# ------------------------------------------------------------
+echo "---- Task 4: Files Per Sub-folder ----"     >> "$REPORT"
+echo "text_files/   : $(ls submissions/text_files/   | wc -l) file(s)" >> "$REPORT"
+echo "data_files/   : $(ls submissions/data_files/   | wc -l) file(s)" >> "$REPORT"
+echo "script_files/ : $(ls submissions/script_files/ | wc -l) file(s)" >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+echo "Sorted full submission listing:"            >> "$REPORT"
+ls submissions/ | grep -v "/" | sort              >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "             END OF REPORT                 " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+
+
+Question 2:
+Open-ended scenario: System log analyser
+Scenario
+A system administrator manages a Linux server that produces three log files daily. Each line in a log file starts with a severity level: INFO, WARNING, or ERROR. The admin needs a script that reads all three logs, counts each severity type per file, collects all error lines across every file, sorts them alphabetically, and writes a concise monitoring report.
+Sample log line format
+INFO   User login successful
+WARNING Disk usage high
+ERROR   Connection failed
+Tasks
+Use ls and wc -l to list all log files and display the total line count of each. Redirect this to the report.
+Use a while loop to iterate over each log file. Inside the loop use grep -c to count INFO, WARNING and ERROR lines, and append the per-file counts using >>.
+Use grep combined with a pipe into sort to collect and alphabetically sort all ERROR lines from all three files in a single command. Append the sorted list to the report.
+Use an if condition with the -gt operator to check if total errors exceed a threshold and print a CRITICAL or OK status line at the bottom of the report.
+Answer 2:
+#!/bin/bash
+# ============================================================
+#  Script   : log_analyser.sh
+#  Scenario : System Log Analyser
+# ============================================================
+
+REPORT="log_report.txt"
+THRESHOLD=5
+
+echo ""                                                > "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "        SYSTEM LOG ANALYSER REPORT         " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Date      : $(date)"                          >> "$REPORT"
+echo "Generated : $(whoami)"                        >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ---- Create 3 sample log files ----
+mkdir -p logs
+
+cat > logs/system.log << 'EOF'
+INFO User login successful
+WARNING Disk usage high
+ERROR File not found
+INFO System update complete
+ERROR Connection failed
+INFO Backup completed
+WARNING Memory usage at 85%
+ERROR Service crashed
+INFO New user created
+WARNING CPU temperature high
+EOF
+
+cat > logs/network.log << 'EOF'
+INFO Network interface up
+ERROR Packet loss detected
+WARNING Bandwidth limit reached
+INFO DNS resolved successfully
+ERROR Firewall rule failed
+INFO VPN connected
+WARNING Latency above threshold
+ERROR Port scan detected
+INFO SSH connection established
+WARNING Unused port open
+EOF
+
+cat > logs/application.log << 'EOF'
+INFO Application started
+ERROR Database connection failed
+WARNING Session timeout approaching
+INFO User authenticated
+ERROR Null pointer exception
+INFO Cache cleared
+WARNING Deprecated API used
+ERROR Unhandled exception thrown
+INFO Scheduled task completed
+WARNING Low disk space for logs
+EOF
+
+# ------------------------------------------------------------
+# TASK 1: List log files and total line count of each
+# ------------------------------------------------------------
+echo "---- Task 1: Log Files and Line Counts ----" >> "$REPORT"
+echo "Log files found:"                            >> "$REPORT"
+ls -lh logs/                                      >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+echo "Total lines per log file:"                  >> "$REPORT"
+for logfile in logs/*.log; do
+    fname=$(basename "$logfile")
+    echo "$fname : $(wc -l < "$logfile") lines"  >> "$REPORT"
+done
+echo ""                                            >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 2: while loop — per-file severity counts
+# ------------------------------------------------------------
+echo "---- Task 2: Severity Counts Per File ----" >> "$REPORT"
+
+total_errors=0
+
+for logfile in logs/*.log; do
+    fname=$(basename "$logfile")
+    info=$(grep -c "^INFO"    "$logfile")
+    warn=$(grep -c "^WARNING" "$logfile")
+    err=$(grep -c  "^ERROR"   "$logfile")
+    total_errors=$((total_errors + err))
+
+    echo "[ $fname ]"                             >> "$REPORT"
+    echo "  INFO    : $info"                      >> "$REPORT"
+    echo "  WARNING : $warn"                      >> "$REPORT"
+    echo "  ERROR   : $err"                       >> "$REPORT"
+    echo ""                                        >> "$REPORT"
+done
+
+# ------------------------------------------------------------
+# TASK 3: All ERROR lines sorted via pipe
+# ------------------------------------------------------------
+echo "---- Task 3: All ERROR Lines Sorted (grep | sort) ----" >> "$REPORT"
+grep -h "^ERROR" logs/*.log | sort                            >> "$REPORT"
+echo ""                                                        >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 4: if -gt threshold → CRITICAL or OK
+# ------------------------------------------------------------
+echo "---- Task 4: Overall Status ----"          >> "$REPORT"
+echo "Total ERROR count across all files: $total_errors" >> "$REPORT"
+echo "Threshold set to: $THRESHOLD"              >> "$REPORT"
+echo ""                                           >> "$REPORT"
+
+if [ $total_errors -gt $THRESHOLD ]; then
+    echo "STATUS: CRITICAL — error count exceeds threshold!" >> "$REPORT"
+else
+    echo "STATUS: OK — system within acceptable limits."     >> "$REPORT"
+fi
+echo ""                                           >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "             END OF REPORT                 " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+
+
+Question 3:
+Open-ended scenario: Student grade checker
+Scenario
+An instructor stores each student's marks in a plain text file, one mark per line. At the end of the semester the instructor wants a script that reads each file, computes a simple pass/fail decision, counts how many students passed and failed, and appends a grade report — without writing a single C program.
+Sample marks file format
+Student: Ali Ahmed
+Marks: 72
+Student: Sara Khan
+Marks: 41
+Tasks
+Use touch to create at least four student mark files, then use echo with > to write the student name and marks into each file.
+Use a for loop to iterate over all mark files. Inside the loop use grep to extract the numeric mark and store it in a variable using read.
+Use an if / else with the -ge operator (pass mark = 50) to label each student PASS or FAIL. Append the result for every student to the report using >>.
+After the loop use echo to append a summary showing total students, total passed and total failed. Also sort the report lines alphabetically and append the sorted version as a final section.
+Answer 3:
+#!/bin/bash
+# ============================================================
+#  Script   : grade_checker.sh
+#  Scenario : Student Grade Checker
+# ============================================================
+
+REPORT="grade_report.txt"
+PASS_MARK=50
+
+echo ""                                                > "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "        STUDENT GRADE CHECKER REPORT       " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Date       : $(date)"                         >> "$REPORT"
+echo "Pass mark  : $PASS_MARK"                      >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 1: Create student mark files using touch and echo >
+# ------------------------------------------------------------
+mkdir -p marks
+
+touch marks/ali_ahmed.txt
+touch marks/sara_khan.txt
+touch marks/usman_ali.txt
+touch marks/fatima_malik.txt
+touch marks/hassan_raza.txt
+
+echo "Student: Ali Ahmed"    > marks/ali_ahmed.txt
+echo "Marks: 72"            >> marks/ali_ahmed.txt
+
+echo "Student: Sara Khan"    > marks/sara_khan.txt
+echo "Marks: 41"            >> marks/sara_khan.txt
+
+echo "Student: Usman Ali"    > marks/usman_ali.txt
+echo "Marks: 85"            >> marks/usman_ali.txt
+
+echo "Student: Fatima Malik" > marks/fatima_malik.txt
+echo "Marks: 49"            >> marks/fatima_malik.txt
+
+echo "Student: Hassan Raza"  > marks/hassan_raza.txt
+echo "Marks: 61"            >> marks/hassan_raza.txt
+
+echo "---- Task 1: Mark Files Created ----"        >> "$REPORT"
+ls -lh marks/                                      >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 2 + 3: for loop, grep to extract mark, if -ge for pass/fail
+# ------------------------------------------------------------
+echo "---- Task 2 & 3: Grade Results ----"         >> "$REPORT"
+printf "%-22s %6s %10s\n" "Student" "Marks" "Result" >> "$REPORT"
+echo "--------------------------------------------" >> "$REPORT"
+
+passed=0
+failed=0
+
+for file in marks/*.txt; do
+    student=$(grep "^Student:" "$file" | cut -d' ' -f2-)
+    marks=$(grep "^Marks:" "$file" | cut -d' ' -f2)
+
+    if [ "$marks" -ge "$PASS_MARK" ]; then
+        result="PASS"
+        passed=$((passed + 1))
+    else
+        result="FAIL"
+        failed=$((failed + 1))
+    fi
+
+    printf "%-22s %6s %10s\n" "$student" "$marks" "$result" >> "$REPORT"
+done
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 4: Summary + sorted listing
+# ------------------------------------------------------------
+echo "---- Task 4: Summary ----"                   >> "$REPORT"
+total=$((passed + failed))
+echo "Total students : $total"                     >> "$REPORT"
+echo "Passed         : $passed"                    >> "$REPORT"
+echo "Failed         : $failed"                    >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+echo "Sorted mark files (ls | sort):"             >> "$REPORT"
+ls marks/ | sort                                   >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "             END OF REPORT                 " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+
+Question 4:
+Open-ended scenario: Backup file verifier
+Labs 2, 4, 5
+Scenario
+A database admin runs nightly backups that produce one text file per database. Sometimes a backup silently fails and produces an empty file. The admin needs a shell script that checks every backup file, flags empty ones as FAILED, counts words in the healthy ones, and generates a verification report the manager can review each morning.
+Sample backup directory
+db_orders_backup.txt   — 59 bytes (ok)
+db_users_backup.txt    — 55 bytes (ok)
+db_logs_backup.txt     — 0 bytes  (empty!)
+Tasks
+Use mkdir and touch to create a backups/ directory with at least four backup files. Write content into three of them using echo >; leave one empty to simulate a failure.
+Use a for loop over all .txt files. Inside the loop use wc -c to get the byte size and an if / else with the -gt operator to decide PASSED or FAILED. Append each result using >>.
+For every PASSED file, use wc -w and wc -l to append a word and line count. Use grep to check if the word successfully appears and note it in the report.
+Use ls piped into sort to append a sorted backup file listing at the end. Finish with an if condition that prints a WARNING if any failures were found or ALL CLEAR otherwise.
+Answer 4:
+#!/bin/bash
+# ============================================================
+#  Script   : backup_verifier.sh
+#  Scenario : Database Backup File Verifier
+# ============================================================
+
+REPORT="backup_report.txt"
+
+echo ""                                                > "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "       DATABASE BACKUP VERIFIER REPORT     " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Date    : $(date)"                            >> "$REPORT"
+echo "User    : $(whoami)"                          >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 1: Create backup directory + files
+# ------------------------------------------------------------
+mkdir -p backups
+
+echo "db_orders backup: 1500 records exported successfully." > backups/db_orders_backup.txt
+echo "db_users backup: 320 users exported successfully."     > backups/db_users_backup.txt
+echo "db_products backup: 870 products exported."            > backups/db_products_backup.txt
+touch backups/db_logs_backup.txt
+
+echo "---- Task 1: Backup Files Found ----"        >> "$REPORT"
+ls -lh backups/                                    >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 2: for loop + wc -c + if -gt → PASSED / FAILED
+# ------------------------------------------------------------
+echo "---- Task 2: Backup Status Check ----"       >> "$REPORT"
+
+passed=0
+failed=0
+
+for file in backups/*.txt; do
+    fname=$(basename "$file")
+    size=$(wc -c < "$file")
+
+    if [ "$size" -gt 0 ]; then
+        echo "PASSED : $fname ($size bytes)"       >> "$REPORT"
+        passed=$((passed + 1))
+    else
+        echo "FAILED : $fname — file is empty"     >> "$REPORT"
+        failed=$((failed + 1))
+    fi
+done
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 3: wc -w / wc -l on passed files + grep for "successfully"
+# ------------------------------------------------------------
+echo "---- Task 3: Content Analysis of Passed Backups ----" >> "$REPORT"
+printf "%-32s %8s %8s\n" "File" "Lines" "Words"            >> "$REPORT"
+echo "--------------------------------------------"          >> "$REPORT"
+
+for file in backups/*.txt; do
+    fname=$(basename "$file")
+    size=$(wc -c < "$file")
+
+    if [ "$size" -gt 0 ]; then
+        lines=$(wc -l < "$file")
+        words=$(wc -w < "$file")
+        printf "%-32s %8s %8s\n" "$fname" "$lines" "$words" >> "$REPORT"
+
+        if grep -q "successfully" "$file"; then
+            echo "  >> contains 'successfully' — confirmed ok" >> "$REPORT"
+        fi
+    fi
+done
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 4: Sorted listing + if WARNING / ALL CLEAR
+# ------------------------------------------------------------
+echo "---- Task 4: Sorted Backup Listing (ls | sort) ----" >> "$REPORT"
+ls backups/ | sort                                         >> "$REPORT"
+echo ""                                                     >> "$REPORT"
+
+echo "---- Final Status ----"                     >> "$REPORT"
+echo "Total  : $((passed + failed))"              >> "$REPORT"
+echo "Passed : $passed"                           >> "$REPORT"
+echo "Failed : $failed"                           >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+if [ "$failed" -gt 0 ]; then
+    echo "STATUS: WARNING — $failed backup(s) failed. Investigate immediately." >> "$REPORT"
+else
+    echo "STATUS: ALL CLEAR — all backups verified."  >> "$REPORT"
+fi
+echo ""                                            >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "             END OF REPORT                 " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+
+
+Question 5:
+Open-ended scenario: Directory change tracker
+Scenario
+A junior sysadmin needs to document the state of three project directories for a handover report. The script must visit each directory, display who is logged in, record what files exist, search for any file containing a specific keyword, and produce a single handover document that the incoming admin can read at a glance.
+Directory structure
+project_a/   project_b/   project_c/
+(each contains a mix of .txt and .sh files)
+Tasks
+Use whoami, uname, and cal to record system identity and the current calendar at the top of the report using > and >>.
+Use mkdir and touch to create three project directories each containing at least two files. Then use a for loop to visit each directory, run pwd and ls inside it, and append the output to the report.
+Inside the same loop use find . -iname to search for all .txt files in each project directory and append the found paths to the report.
+After the loop use grep piped into sort to search all .txt files for a keyword entered by the user via read, and append the sorted matches. End with a total file count using ls piped into wc -l.
+Answer 5:
+#!/bin/bash
+# ============================================================
+#  Script   : dir_tracker.sh
+#  Scenario : Directory Change Tracker / Handover Report
+# ============================================================
+
+REPORT="handover_report.txt"
+
+echo ""                                                > "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "         DIRECTORY HANDOVER REPORT         " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 1: whoami, uname, cal at report header
+# ------------------------------------------------------------
+echo "Prepared by : $(whoami)"                     >> "$REPORT"
+echo "System      : $(uname -n)"                   >> "$REPORT"
+echo "OS          : $(uname -o)"                   >> "$REPORT"
+echo ""                                             >> "$REPORT"
+echo "---- Calendar ----"                           >> "$REPORT"
+cal                                                >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ------------------------------------------------------------
+# TASK 2: Create 3 project directories with files,
+#         then for loop: pwd equivalent + ls per dir
+# ------------------------------------------------------------
+mkdir -p project_a project_b project_c
+
+touch project_a/requirements.txt  project_a/setup.sh
+touch project_b/design_notes.txt  project_b/deploy.sh
+touch project_c/test_results.txt  project_c/run.sh
+
+echo "project overview for phase one."   > project_a/requirements.txt
+echo "design notes covering all modules." > project_b/design_notes.txt
+echo "test results show all cases passed." > project_c/test_results.txt
+
+echo "---- Task 2: Directory Listings ----"        >> "$REPORT"
+
+for dir in project_a project_b project_c; do
+    echo "[ $dir/ ] — path: $(pwd)/$dir"           >> "$REPORT"
+    ls -lh "$dir/"                                 >> "$REPORT"
+    echo ""                                         >> "$REPORT"
+done
+
+# ------------------------------------------------------------
+# TASK 3: find -iname inside each dir
+# ------------------------------------------------------------
+echo "---- Task 3: Text Files Found (find -iname) ----" >> "$REPORT"
+
+for dir in project_a project_b project_c; do
+    echo "Searching in $dir/:"                    >> "$REPORT"
+    find "$dir" -iname "*.txt"                    >> "$REPORT"
+    echo ""                                        >> "$REPORT"
+done
+
+# ------------------------------------------------------------
+# TASK 4: read keyword, grep | sort across all .txt, total count
+# ------------------------------------------------------------
+echo "Enter a keyword to search across all project text files:"
+read keyword
+
+echo "---- Task 4: Keyword Search — '$keyword' (grep | sort) ----" >> "$REPORT"
+grep -rl "$keyword" project_a/*.txt project_b/*.txt project_c/*.txt 2>/dev/null | sort >> "$REPORT"
+echo ""                                                               >> "$REPORT"
+
+echo "Matching lines containing '$keyword':"      >> "$REPORT"
+grep -h "$keyword" project_a/*.txt project_b/*.txt project_c/*.txt 2>/dev/null | sort >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+echo "---- Total file count per directory ----"   >> "$REPORT"
+for dir in project_a project_b project_c; do
+    count=$(ls "$dir/" | wc -l)
+    echo "$dir/ : $count file(s)"                 >> "$REPORT"
+done
+echo ""                                            >> "$REPORT"
+
+echo "Overall total files across all projects:"   >> "$REPORT"
+ls project_a/ project_b/ project_c/ | wc -l      >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "             END OF REPORT                 " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+
+==============Section B Oel=========================
+Open Ended Lab Scenario: System Log Monitoring Tool
+
+Scenario
+
+A system administrator manages a Linux server that produces multiple log files containing system messages, warnings, and errors such as:
+INFO User login successful
+WARNING Disk usage high
+ERROR File not found
+INFO System update complete
+ERROR Connection failed
+
+The administrator wants a shell script that automatically scans all log files and generates a summary report for overall system analysis.
+
+Requirements
+Create a shell based monitoring tool that:
+Analyzes at least 3 log files
+Uses Linux commands to process logs
+Generates a report file containing:
+Date and time of report generation
+Log file names
+Total number of entries
+Count of:
+ERROR messages
+WARNING messages
+INFO messages
+Displays useful statistics for analysis
+Saves the final output into a report file
+
+ANSWER:
+#!/bin/bash
+
+# Report file
+REPORT="log_report.txt"
+
+# Clear previous report
+echo "System Log Monitoring Report" > $REPORT
+echo "Generated on: $(date)" >> $REPORT
+echo "--------------------------------------" >> $REPORT
+
+# Log files list
+LOG_FILES=("log1.txt" "log2.txt" "log3.txt")
+
+TOTAL_ENTRIES=0
+TOTAL_ERRORS=0
+TOTAL_WARNINGS=0
+TOTAL_INFO=0
+
+# Loop through log files
+for FILE in "${LOG_FILES[@]}"
+do
+    if [ -f "$FILE" ]; then
+        echo "Processing file: $FILE" >> $REPORT
+
+        ENTRIES=$(wc -l < "$FILE")
+        ERRORS=$(grep -c "ERROR" "$FILE")
+        WARNINGS=$(grep -c "WARNING" "$FILE")
+        INFO=$(grep -c "INFO" "$FILE")
+
+        echo "Total Entries: $ENTRIES" >> $REPORT
+        echo "Errors: $ERRORS" >> $REPORT
+        echo "Warnings: $WARNINGS" >> $REPORT
+        echo "Info: $INFO" >> $REPORT
+        echo "--------------------------------------" >> $REPORT
+
+        # Add to totals
+        TOTAL_ENTRIES=$((TOTAL_ENTRIES + ENTRIES))
+        TOTAL_ERRORS=$((TOTAL_ERRORS + ERRORS))
+        TOTAL_WARNINGS=$((TOTAL_WARNINGS + WARNINGS))
+        TOTAL_INFO=$((TOTAL_INFO + INFO))
+    else
+        echo "File $FILE not found" >> $REPORT
+    fi
+done
+
+# Final summary
+echo "Overall Summary" >> $REPORT
+echo "Total Entries: $TOTAL_ENTRIES" >> $REPORT
+echo "Total Errors: $TOTAL_ERRORS" >> $REPORT
+echo "Total Warnings: $TOTAL_WARNINGS" >> $REPORT
+echo "Total Info: $TOTAL_INFO" >> $REPORT
+
+echo "Report generated successfully in $REPORT"
+
+
+==============Section A Oel=========================
+Open-Ended Scenario: Automated File Organizer
+
+You are working as a system assistant in a university computer lab. Every week, students submit many files such as text reports, program files, and data files in a directory called submissions.
+
+Because the number of files is large, the instructor wants a system that can:
+Automatically check files
+Organize files
+Analyze files
+
+You are asked to design a solution using shell scripting and file commands.
+
+Tasks
+File exploration using commands
+Conditional shell scripting
+File analysis
+
+The script should generate a simple report file that shows all the analysis performed.
+
+ANSWER:
+#!/bin/bash
+
+DIR="submissions"
+REPORT="report.txt"
+
+echo "===== File Analysis Report =====" > $REPORT
+echo "Directory: $DIR" >> $REPORT
+echo "" >> $REPORT
+
+# Check directory
+if [ ! -d "$DIR" ]; then
+    echo "Directory not found!"
+    exit 1
+fi
+
+# Counters
+txt_count=0
+c_count=0
+data_count=0
+
+echo "Listing all files:" >> $REPORT
+ls "$DIR" >> $REPORT
+echo "" >> $REPORT
+
+# -------- TEXT FILES LOOP --------
+echo "---- Text Files ----" >> $REPORT
+for file in "$DIR"/*.txt
+do
+    if [ -f "$file" ]; then
+        ((txt_count++))
+        lines=$(wc -l < "$file")
+        echo "$file | Lines: $lines" >> $REPORT
+    fi
+done
+echo "" >> $REPORT
+
+# -------- C FILES LOOP --------
+echo "---- C Files ----" >> $REPORT
+for file in "$DIR"/*.c
+do
+    if [ -f "$file" ]; then
+        ((c_count++))
+        lines=$(wc -l < "$file")
+        echo "$file | Lines: $lines" >> $REPORT
+    fi
+done
+echo "" >> $REPORT
+
+# -------- DATA FILES LOOP --------
+echo "---- CSV Files ----" >> $REPORT
+for file in "$DIR"/*.csv
+do
+    if [ -f "$file" ]; then
+        ((data_count++))
+        rows=$(wc -l < "$file")
+        echo "$file | Rows: $rows" >> $REPORT
+    fi
+done
+echo "" >> $REPORT
+
+# -------- UNKNOWN FILES LOOP --------
+echo "---- Other Files ----" >> $REPORT
+for file in "$DIR"/*
+do
+    if [ -f "$file" ]; then
+        case "$file" in
+            *.txt|*.c|*.csv) ;;  # skip known types
+            *)
+                echo "$file | Unknown Type" >> $REPORT
+                ;;
+        esac
+    fi
+done
+echo "" >> $REPORT
+
+# Summary
+echo "===== Summary =====" >> $REPORT
+echo "Text Files: $txt_count" >> $REPORT
+echo "C Files: $c_count" >> $REPORT
+echo "CSV Files: $data_count" >> $REPORT
+
+echo "Report generated successfully: $REPORT"
+
+=================Commands=============================
+════════════════════════════════════════════════════════
+  SECTION 1: SHELL COMMANDS
+════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────
+  LAB 1 — Introduction to Linux
+────────────────────────────────────────────────────────
+
+ls                          List directory contents
+cd <dir>                    Change to the specified directory
+pwd                         Print current working directory
+mkdir <dir>                 Create a new directory
+rmdir <dir>                 Remove an empty directory
+rm <file>                   Remove a file
+rm -r <dir>                 Remove a directory and all its contents recursively
+cp <src> <dst>              Copy a file or directory
+mv <src> <dst>              Move or rename a file or directory
+cat <file>                  Display the contents of a file
+who                         Show all users currently logged in
+whoami                      Display the current username
+uname                       Display system information
+groups                      Show all groups the current user belongs to
+cal                         Display a calendar for the current month
+sleep <n>                   Pause execution for n seconds
+shutdown                    Power off or reboot the machine
+gcc -o <output> <file.c>    Compile a C source file into an executable
+./<program>                 Execute a compiled binary in the current directory
+
+
+────────────────────────────────────────────────────────
+  LAB 2 — Linux Commands and Shell Scripting
+────────────────────────────────────────────────────────
+
+cp data.txt /var/tmp/               Copy a single file to a destination directory
+cp data.txt file.csv /var/tmp/      Copy multiple files to a destination directory
+man <command>                        Display the manual page for a command
+chmod 755 <file.sh>                 Set executable permissions on a shell script
+bash my_script.sh                   Run a shell script via the bash interpreter
+./my_script.sh                      Execute a shell script directly (after chmod)
+echo "Hello World!"                 Print text to standard output
+#!/bin/bash                         Shebang line — declares bash as the interpreter
+# comment                           Inline comment (line is ignored by the shell)
+
+
+────────────────────────────────────────────────────────
+  LAB 3 — Find, Grep, Sort and Shell Variables
+────────────────────────────────────────────────────────
+
+  find Command:
+    Syntax:   find [options] [starting/path] [expression]
+    $ find . -iname file.txt          Find file.txt (case-insensitive) in current dir
+    $ find . -iname "*.c"             Find all .c files (case-insensitive)
+
+  grep Command:
+    Syntax:   grep [pattern] [file]
+    $ grep int file.c                 Find all lines containing 'int'
+    $ grep "int main" file.c          Find exact phrase 'int main'
+
+  sort Command:
+    Syntax:   sort [expression]
+    $ sort filename.txt               Sort lines (A-Z) and display on screen
+    $ sort filename.txt > sorted.txt  Sort and write output to sorted.txt
+    $ sort filename.txt >> sorted.txt Sort and append output to sorted.txt
+    $ sort -r filename.txt            Sort in reverse (descending) order
+
+  Shell Variables:
+    variable_name=variable_value      Assign a value to a variable
+    NAME="Zara Ali"                   Declare a string scalar variable
+    $NAME  or  ${NAME}               Dereference/use a variable
+    read var1                         Read user input and store in var1
+
+  gcc (from shell scripts):
+    gcc hello.c -o hello              Compile C source into executable 'hello'
+    ./hello                           Run the compiled executable
+
+
+────────────────────────────────────────────────────────
+  LAB 4 — File Commands, Redirection & Conditional Structures
+────────────────────────────────────────────────────────
+
+  touch Command:
+    $ touch file.txt                  Create an empty .txt file
+    $ touch file.sh                   Create an empty shell script file
+    $ touch file.txt                  Update the timestamp of an existing file
+
+  cat Command:
+    $ cat file1.txt > file2.txt                         Copy file1 contents into file2
+    $ cat file1.txt file2.txt file3.txt > file4.txt     Concatenate three files into one
+
+  read Command:
+    $ read variable                   Read keyboard input and store in 'variable'
+    $ echo $variable                  Display the stored value
+
+  wc Command (word count):
+    Syntax:   wc [options] filenames
+    wc -l <file>                      Count lines
+    wc -w <file>                      Count words
+    wc -c <file>                      Count bytes
+    wc -m <file>                      Count characters
+    wc -L <file>                      Print length of the longest line
+    wc -l tecmint.txt                 Example usage
+
+  Redirection Operators:
+    $ ls -la > filelist.txt           Redirect stdout to file (overwrite)
+    $ echo "The End" >> filelist.txt  Append stdout to existing file
+    $ wc -w < document.txt            Read stdin from file
+    $ wc -w < document.txt > wordcount.txt    Combine input and output redirection
+
+  Arithmetic Expansion:
+    Syntax:   $((EXPRESSION))
+    $ echo $((2+2))                   Evaluate and print: 4
+    echo $((first_num + second_num))  Addition
+    echo $((first_num - second_num))  Subtraction
+    echo $((first_num * second_num))  Multiplication
+    echo $((first_num / second_num))  Division
+    echo $((first_num % second_num))  Modulus (remainder)
+
+  Conditional Operators (used inside [ ]):
+    <=  >=  <  >    Comparison operators
+    ==  !=          Equality and inequality
+    &&              Logical AND
+    ||              Logical OR
+
+  if / elif / else Structures:
+
+    # Form 1 — Simple if
+    if [ condition ]; then
+        commands
+    fi
+
+    # Form 2 — if / else
+    if [ condition ]; then
+        commands
+    else
+        commands
+    fi
+
+    # Form 3 — if / elif / else
+    if [ condition ]; then
+        commands
+    elif [ condition ]; then
+        commands
+    else
+        commands
+    fi
+
+
+────────────────────────────────────────────────────────
+  LAB 5 — Pipes, Operators and Loop Statements
+────────────────────────────────────────────────────────
+
+  Pipe Operator |:
+    Syntax:   command_1 | command_2 | command_3 ...
+    $ ls -l | wc -w                         Count words in ls output
+    $ ls -l | wc -m                         Count characters in ls output
+    $ ls -l | wc -l                         Count lines in ls output
+    $ ls | grep "D" | sort > record.txt     Filter, sort, and save to file
+    $ ls | grep "s" | sort > record.txt     Filter by 's', sort, and save
+
+  Relational Operators (numeric, used inside [ ]):
+    -eq     Equal to:                [ $a -eq $b ]
+    -ne     Not equal to:            [ $a -ne $b ]
+    -gt     Greater than:            [ $a -gt $b ]
+    -lt     Less than:               [ $a -lt $b ]
+    -ge     Greater than or equal:   [ $a -ge $b ]
+    -le     Less than or equal:      [ $a -le $b ]
+
+  Boolean Operators:
+    !       Logical NOT:   [ ! false ]
+    -o      Logical OR:    [ $a -lt 20 -o $b -gt 100 ]
+    -a      Logical AND:   [ $a -lt 20 -a $b -gt 100 ]
+
+  String Operators:
+    =       Equal to:      [ "$a" = "$b" ]
+    !=      Not equal to:  [ "$a" != "$b" ]
+
+  for Loop:
+
+    # C-style for loop
+    for (( EXP1; EXP2; EXP3 ))
+    do
+        command1
+        command2
+    done
+
+    # Example:
+    for (( i=1; i<=5; i++ ))
+    do
+        echo "Welcome $i times"
+    done
+
+    # Range-based for loop
+    for i in 1 2 3 4 5
+    do
+        echo "Welcome $i times"
+    done
+
+    # Step increment  {START..END..INCREMENT}
+    for i in {0..10..2}
+    do
+        echo "Welcome $i times"
+    done
+
+    # Iterating over files
+    count=0
+    for file in /home/user/Documents/*;
+    do
+        count=$(( count + 1))
+    done
+    echo "Total number of files is $count"
+
+  while Loop:
+
+    Syntax:
+    while [ condition ]
+    do
+        command1
+        command2
+    done
+
+    # Example:
+    x=1
+    while [ $x -lt 6 ]
+    do
+        echo "Welcome $x times"
+        x=$(( x + 1 ))
+    done
+
+
+════════════════════════════════════════════════════════
+  SECTION 2: SYSTEM CALLS
+════════════════════════════════════════════════════════
+
+  Required Headers:
+    #include <stdio.h>
+    #include <sys/types.h>    // pid_t type definition
+    #include <unistd.h>       // fork(), getpid(), getppid(), execlp()
+    #include <stdlib.h>       // exit()
+
+────────────────────────────────────────────────────────
+  Process-Related System Calls
+────────────────────────────────────────────────────────
+
+  fork()
+    Category:   Process Creation
+    Syntax:     pid_t pid = fork();
+    Description: Creates a new child process by duplicating the calling process.
+    Return values:
+       -1   →  Fork failed (error)
+        0   →  Returned to the CHILD process
+       >0   →  Returned to the PARENT process (value = child's PID)
+
+  exit()
+    Category:   Process Termination
+    Syntax:     exit(-1);
+    Description: Terminates the calling process. Non-zero argument indicates error.
+
+  getpid()
+    Category:   Process Identification
+    Syntax:     pid_t pid = getpid();
+    Description: Returns the process ID (PID) of the current calling process.
+
+  getppid()
+    Category:   Process Identification
+    Syntax:     pid_t ppid = getppid();
+    Description: Returns the PID of the parent of the calling process.
+
+  execve()
+    Category:   Program Execution
+    Syntax:     execve(pathname, argv, envp);
+    Description: Replaces the current process image with a new program.
+                 All exec() variants are wrappers around this call.
+
+  execlp()
+    Category:   Program Execution
+    Syntax:     execlp(const char *file, const char *arg, ..., NULL);
+    Example:    execlp("/bin/ls", "ls", NULL);
+    Description: Executes a program, searching PATH for the file. Replaces the
+                 calling process image. Last argument must always be NULL.
+
+  setuid()
+    Category:   Identity Management
+    Syntax:     setuid(uid_t uid);
+    Description: Sets the user identity (UID) of the current process.
+
+  ptrace()
+    Category:   Debugging / Tracing
+    Syntax:     ptrace(request, pid, addr, data);
+    Description: Allows a parent process to observe and control execution of
+                 another process. Used by debuggers (e.g., gdb).
+
+  wait()
+    Category:   Process Synchronization
+    Syntax:     pid_t pid = wait(int *status);
+    Description: Suspends the calling process until one of its child processes
+                 terminates.
+
+  fprintf(stderr, ...)
+    Category:   Error Reporting
+    Syntax:     fprintf(stderr, "Fork failed!\n");
+    Description: Writes a formatted error message to standard error output.
+                 Used to report failures such as a failed fork().
+
+────────────────────────────────────────────────────────
+  fork() Logic Template
+────────────────────────────────────────────────────────
+
+    pid_t pid;
+    pid = fork();
+
+    if (pid < 0) {
+        // Fork failed — handle error
+        fprintf(stderr, "Fork failed!\n");
+        exit(-1);
+    } else if (pid == 0) {
+        // Child process code
+        printf("I am the child, PID = %d\n", getpid());
+    } else {
+        // Parent process code
+        printf("I am the parent, child PID = %d\n", pid);
+    }
+
+────────────────────────────────────────────────────────
+  getpid() / getppid() Example
+────────────────────────────────────────────────────────
+
+    pid = fork();
+    if (pid == 0) {
+        printf("Child PID: %d, Parent PID: %d\n", getpid(), getppid());
+    } else if (pid > 0) {
+        printf("Parent PID: %d\n", getpid());
+    }
+
+────────────────────────────────────────────────────────
+  execlp() Example (Lab 6 — Task 3)
+────────────────────────────────────────────────────────
+
+    pid = fork();
+    if (pid == 0) {
+        execlp("/bin/ls", "ls", NULL);   // Child replaces itself with 'ls'
+    } else {
+        printf("Parent, child PID = %d\n", pid);
+    }
+
+
+
+====================================================================================================================================================
+Open-ended lab scenario: Directory explorer and file organizer
+Scenario
+A junior Linux administrator has just been given access to a new server. They need to explore the file system, understand what directories exist, and organize files from a messy home directory by copying and moving them into structured folders.
+Example file system state
+/home/user/report.txt
+/home/user/data.csv
+/home/user/notes.txt
+/home/user/old_backup.txt
+Requirements
+Use pwd, ls, and whoami to display current location and user identity
+Use mkdir to create at least three organized sub-directories
+Use cp and mv to distribute files into the appropriate sub-directories
+Use rm to delete any unnecessary files after organizing
+Use uname to record system information and redirect it into a summary report file using >
+The script should create a report file at the end
+
+#!/bin/bash
+# ============================================================
+#  Script : organizer.sh
+#  Scenario: Directory Explorer and File Organizer
+#  Lab     : Labs 1 & 2
+# ============================================================
+
+REPORT="organizer_report.txt"
+
+# ---- Create/clear report file ----
+echo "" > "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "   DIRECTORY EXPLORER & FILE ORGANIZER     " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Report generated on: $(date)"                >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ---- System Information ----
+echo "---- System Information ----"               >> "$REPORT"
+echo "Current User   : $(whoami)"                 >> "$REPORT"
+echo "System Info    : $(uname -a)"               >> "$REPORT"
+echo "Working Dir    : $(pwd)"                    >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- Create sample files to organize ----
+touch report.txt data.csv notes.txt old_backup.txt script.sh image.png
+echo "---- Creating sample files ----"            >> "$REPORT"
+echo "Files created: report.txt  data.csv  notes.txt  old_backup.txt  script.sh  image.png" >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- List files before organizing ----
+echo "---- Files BEFORE organizing ----"          >> "$REPORT"
+ls -lh                                            >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- Create organized sub-directories ----
+mkdir -p docs data scripts images
+echo "---- Creating sub-directories ----"         >> "$REPORT"
+echo "Created: docs/   data/   scripts/   images/" >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ---- Copy and Move files into directories ----
+echo "---- Organizing files ----"                 >> "$REPORT"
+cp report.txt docs/
+echo "Copied  : report.txt     --> docs/"         >> "$REPORT"
+
+mv notes.txt docs/
+echo "Moved   : notes.txt      --> docs/"         >> "$REPORT"
+
+mv data.csv data/
+echo "Moved   : data.csv       --> data/"         >> "$REPORT"
+
+mv script.sh scripts/
+echo "Moved   : script.sh      --> scripts/"      >> "$REPORT"
+
+mv image.png images/
+echo "Moved   : image.png      --> images/"       >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- Delete unnecessary file ----
+rm old_backup.txt
+echo "---- Removing unnecessary file ----"        >> "$REPORT"
+echo "Deleted : old_backup.txt"                   >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- List files AFTER organizing ----
+echo "---- Directory structure AFTER organizing ----" >> "$REPORT"
+for dir in docs data scripts images; do
+    echo "[$dir/]"    >> "$REPORT"
+    ls "$dir/"        >> "$REPORT"
+done
+echo ""               >> "$REPORT"
+
+echo "============================================" >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+========================================================================================================================================================
+
+
+
+=======================================================================================================================================================
+Open-ended lab scenario: Source code search and sort tool
+Scenario
+A software team maintains a large collection of C source files across a project directory. A lead developer needs a shell script that automatically searches for all C files, scans them for specific keywords, and produces a sorted summary report.
+Example project directory
+main.c     — contains: int, printf, return
+utils.c    — contains: int, malloc, free
+config.c   — contains: define, char, return
+Requirements
+Use find . -iname "*.c" to locate all C source files in the project directory
+Use grep to search for at least two keywords (e.g. int main, printf) across all found files
+Use sort to sort the grep results and store them in a report using >>
+Include the date, total file count, and keyword match lines in the final report
+The script should create a report file at the end
+
+#!/bin/bash
+# ============================================================
+#  Script : search_sort.sh
+#  Scenario: Source Code Search and Sort Tool
+#  Lab     : Lab 3
+# ============================================================
+
+REPORT="search_sort_report.txt"
+
+# ---- Create/clear report file ----
+echo "" > "$REPORT"
+
+echo "============================================" >> "$REPORT"
+echo "    SOURCE CODE SEARCH AND SORT TOOL       " >> "$REPORT"
+echo "============================================" >> "$REPORT"
+echo "Report generated on: $(date)"                >> "$REPORT"
+echo ""                                             >> "$REPORT"
+
+# ---- Create sample C source files ----
+mkdir -p project
+
+cat > project/main.c << 'EOF'
+#include <stdio.h>
+int main() {
+    printf("Hello from main\n");
+    int x = 10;
+    return 0;
+}
+EOF
+
+cat > project/utils.c << 'EOF'
+#include <stdio.h>
+#include <stdlib.h>
+int helper() {
+    int val = 0;
+    printf("Inside helper\n");
+    return val;
+}
+EOF
+
+cat > project/config.c << 'EOF'
+#include <stdio.h>
+#define MAX 100
+char name[] = "config";
+int setup() {
+    printf("Setup done\n");
+    return 0;
+}
+EOF
+
+echo "---- Sample C files created ----"           >> "$REPORT"
+echo "project/main.c"                             >> "$REPORT"
+echo "project/utils.c"                            >> "$REPORT"
+echo "project/config.c"                           >> "$REPORT"
+echo ""                                            >> "$REPORT"
+
+# ---- Find all .c files ----
+echo "---- Finding all .c files (find -iname) ----" >> "$REPORT"
+find ./project -iname "*.c"                          >> "$REPORT"
+FILE_COUNT=$(find ./project -iname "*.c" | wc -l)
+echo "Total .c files found: $FILE_COUNT"             >> "$REPORT"
+echo ""                                              >> "$REPORT"
+
+# ---- Search keyword: int main ----
+echo "---- grep results for keyword: 'int main' ----" >> "$REPORT"
+grep "int main" ./project/*.c | sort                   >> "$REPORT"
+echo ""                                                >> "$REPORT"
+
+# ---- Search keyword: printf ----
+echo "---- grep results for keyword: 'printf' ----"  >> "$REPORT"
+grep "printf" ./project/*.c | sort                    >> "$REPORT"
+echo ""                                               >> "$REPORT"
+
+# ---- Search keyword: return ----
+echo "---- grep results for keyword: 'return' ----"  >> "$REPORT"
+grep "return" ./project/*.c | sort                    >> "$REPORT"
+echo ""                                               >> "$REPORT"
+
+# ---- Sorted list of all .c files ----
+echo "---- Sorted list of all .c files ----"         >> "$REPORT"
+find ./project -iname "*.c" | sort                   >> "$REPORT"
+echo ""                                              >> "$REPORT"
+
+echo "============================================"  >> "$REPORT"
+
+echo "Report saved to: $REPORT"
+cat "$REPORT"
+======================================================================================================================
