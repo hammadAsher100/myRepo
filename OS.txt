@@ -700,55 +700,68 @@ ANSWER:
 DIR="submissions"
 REPORT="report.txt"
 
-echo "File Analysis Report" > $REPORT
+echo "===== File Analysis Report =====" > $REPORT
+echo "Directory: $DIR" >> $REPORT
+echo "" >> $REPORT
 
-# check directory
+# Check directory
 if [ ! -d "$DIR" ]; then
-    echo "Folder not found"
+    echo "Directory not found!"
     exit 1
 fi
 
-txt=0
-c=0
-csv=0
+# Counters
+txt_count=0
+c_count=0
+data_count=0
 
-# list files
-echo "Files:" >> $REPORT
-ls $DIR >> $REPORT
+echo "Listing all files:" >> $REPORT
+ls "$DIR" >> $REPORT
 echo "" >> $REPORT
 
-# text files
-for f in $DIR/*.txt
+# -------- TEXT FILES LOOP --------
+echo "---- Text Files ----" >> $REPORT
+for file in "$DIR"/*.txt
 do
-    [ -f "$f" ] || continue
-    txt=$((txt+1))
-    echo "$f lines: $(wc -l < $f)" >> $REPORT
+    if [ -f "$file" ]; then
+        ((txt_count++))
+        lines=$(wc -l < "$file")
+        echo "$file | Lines: $lines" >> $REPORT
+    fi
 done
-
-# c files
-for f in $DIR/*.c
-do
-    [ -f "$f" ] || continue
-    c=$((c+1))
-    echo "$f lines: $(wc -l < $f)" >> $REPORT
-done
-
-# csv files
-for f in $DIR/*.csv
-do
-    [ -f "$f" ] || continue
-    csv=$((csv+1))
-    echo "$f rows: $(wc -l < $f)" >> $REPORT
-done
-
-# summary
 echo "" >> $REPORT
-echo "Summary:" >> $REPORT
-echo "txt: $txt" >> $REPORT
-echo "c: $c" >> $REPORT
-echo "csv: $csv" >> $REPORT
 
-echo "Done. Check report.txt"
+# -------- C FILES LOOP --------
+echo "---- C Files ----" >> $REPORT
+for file in "$DIR"/*.c
+do
+    if [ -f "$file" ]; then
+        ((c_count++))
+        lines=$(wc -l < "$file")
+        echo "$file | Lines: $lines" >> $REPORT
+    fi
+done
+echo "" >> $REPORT
+
+# -------- DATA FILES LOOP --------
+echo "---- CSV Files ----" >> $REPORT
+for file in "$DIR"/*.csv
+do
+    if [ -f "$file" ]; then
+        ((data_count++))
+        rows=$(wc -l < "$file")
+        echo "$file | Rows: $rows" >> $REPORT
+    fi
+done
+echo "" >> $REPORT
+
+# Summary
+echo "===== Summary =====" >> $REPORT
+echo "Text Files: $txt_count" >> $REPORT
+echo "C Files: $c_count" >> $REPORT
+echo "CSV Files: $data_count" >> $REPORT
+
+echo "Report generated successfully: $REPORT"
 
 =================Commands=============================
 ════════════════════════════════════════════════════════
